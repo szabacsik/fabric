@@ -1,0 +1,11 @@
+{
+  "environments":
+  {
+    "local":
+    {
+      "host": "172.28.128.7",
+      "user": "vagrant",
+      "password": "vagrant"
+    }
+  }
+}
