@@ -1,5 +1,6 @@
 from fabric import task, Connection
 from invoke import call
+import requests
 
 """
 import os
@@ -54,6 +55,26 @@ def dockerInstall(context):
         conn.sudo('curl -fsSL https://get.docker.com -o get-docker.sh')
         conn.sudo('chmod +x get-docker.sh')
         conn.sudo('./get-docker.sh')
+
+
+# https://stackoverflow.com/questions/49839028/how-to-upgrade-docker-compose-to-latest-version
+@task
+def dockerComposeInstall(context):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        r = requests.get('https://api.github.com/repos/docker/compose/releases/latest')
+        data = r.json()
+        latest_version = data['name']
+        destionation = '/usr/local/bin/docker-compose'
+        conn.sudo('curl -L https://github.com/docker/compose/releases/download/%s/docker-compose-$(uname -s)-$(uname -m) -o %s' % (latest_version, destionation))
+        conn.sudo('chmod 755 %s' % destionation)
+
+
+@task
+def dockerComposeRemove(context):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        conn.sudo('apt purge docker-compose')
+        destionation = '/usr/local/bin/docker-compose'
+        conn.sudo('rm -rf %s' % destionation)
 
 
 @task
