@@ -141,3 +141,17 @@ def addWorker(context):
         conn.sudo('chmod +w /etc/sudoers')
         conn.sudo('bash -c \'echo "worker ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers\'', warn=True)
         conn.sudo('chmod -w /etc/sudoers')
+
+# https://stackoverflow.com/questions/3557037/appending-a-line-to-a-file-only-if-it-does-not-already-exist
+@task
+def addLineToFileIfNotExist(context, line, file):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        command = 'grep -qxF \'%s\' %s || echo \'%s\' >> %s' %(line, file, line, file)
+        conn.sudo('sh -c \'%s\'' % command, warn=True)
+
+
+@task(pre=[call(addLineToFileIfNotExist, line='8.8.8.8', file='/etc/resolv.conf'), call(addLineToFileIfNotExist, line='9.9.9.9', file='/etc/resolv.conf'), call(addLineToFileIfNotExist, line='8.8.4.4', file='/etc/resolv.conf')])
+def addNameServers(context):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        command = "sh -c \'sed -i -e \"s/options edns0/#options edns0/g\" /etc/resolv.conf\'"
+        conn.sudo(command, warn=True)
