@@ -1,3 +1,5 @@
 *.py linguist-language=Python
+fabfile.py linguist-language=Python
+*.py linguist-detectable=true
 *.json linguist-detectable=false
 *.md linguist-detectable=false
