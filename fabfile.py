@@ -143,11 +143,16 @@ def addWorker(context):
         conn.sudo('chmod -w /etc/sudoers')
 
 # https://stackoverflow.com/questions/3557037/appending-a-line-to-a-file-only-if-it-does-not-already-exist
+# docker exec -it -u0 database /bin/bash -lc "grep -qxF 'bind-address = 0.0.0.0' /etc/my.cnf || echo 'bind-address = 0.0.0.0' >> /etc/my.cnf"
 @task
-def addLineToFileIfNotExist(context, line, file):
+def addLineToFileIfNotExist(context, line, file, container=None):
     with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
         command = 'grep -qxF \'%s\' %s || echo \'%s\' >> %s' %(line, file, line, file)
-        conn.sudo('sh -c \'%s\'' % command, warn=True)
+        if not (container is None):
+            command = 'docker exec -i -u0 %s /bin/bash -lc "%s"' % (container, command)
+        else:
+            command = 'sh -c \'%s\'' % command
+        conn.sudo(command, warn=True)
 
 
 @task(pre=[call(addLineToFileIfNotExist, line='8.8.8.8', file='/etc/resolv.conf'), call(addLineToFileIfNotExist, line='9.9.9.9', file='/etc/resolv.conf'), call(addLineToFileIfNotExist, line='8.8.4.4', file='/etc/resolv.conf')])
@@ -155,3 +160,17 @@ def addNameServers(context):
     with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
         command = "sh -c \'sed -i -e \"s/options edns0/#options edns0/g\" /etc/resolv.conf\'"
         conn.sudo(command, warn=True)
+
+@task(pre=[call(addLineToFileIfNotExist, line="bind-address = 0.0.0.0", file="/etc/my.cnf", container="database")])
+def mysqlAllowNetworkAccess(context):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        container = "database"
+        sql = 'CREATE USER IF NOT EXISTS \'root\'@\'%\' IDENTIFIED BY \'PASSWORD\';'
+        command = "docker exec -i %s mysql -u root --password=PASSWORD -e \"%s\"" % (container, sql)
+        conn.sudo(command)
+        sql = 'GRANT ALL PRIVILEGES ON *.* TO \'root\'@\'%\' WITH GRANT OPTION;'
+        command = "docker exec -i %s mysql -u root --password=PASSWORD -e \"%s\"" % (container, sql)
+        conn.sudo(command)
+        sql = 'FLUSH PRIVILEGES;'
+        command = "docker exec -i %s mysql -u root --password=PASSWORD -e \"%s\"" % (container, sql)
+        conn.sudo(command)
