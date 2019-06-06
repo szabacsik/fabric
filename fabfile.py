@@ -174,3 +174,13 @@ def mysqlAllowNetworkAccess(context):
         sql = 'FLUSH PRIVILEGES;'
         command = "docker exec -i %s mysql -u root --password=PASSWORD -e \"%s\"" % (container, sql)
         conn.sudo(command)
+
+@task
+def dockerComposeUp(context, composeYmlDirectory="/home/worker"):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        conn.run('cd %s && docker-compose up --detach' % composeYmlDirectory)
+
+@task
+def dockerComposeDown(context, composeYmlDirectory="/home/worker"):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        conn.run('cd %s && docker-compose down' % composeYmlDirectory)
