@@ -181,6 +181,11 @@ def dockerComposeUp(context, composeYmlDirectory="/home/worker"):
         conn.run('cd %s && docker-compose up --detach' % composeYmlDirectory)
 
 @task
+def dockerComposeUpForced(context, composeYmlDirectory="/home/worker"):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        conn.run('cd %s && docker-compose up --detach --force-recreate' % composeYmlDirectory)
+
+@task
 def dockerComposeDown(context, composeYmlDirectory="/home/worker"):
     with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
         conn.run('cd %s && docker-compose down' % composeYmlDirectory)
