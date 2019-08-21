@@ -189,3 +189,8 @@ def dockerComposeUpForced(context, composeYmlDirectory="/home/worker"):
 def dockerComposeDown(context, composeYmlDirectory="/home/worker"):
     with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
         conn.run('cd %s && docker-compose down' % composeYmlDirectory)
+
+@task
+def dockerComposePull(context, composeYmlDirectory="/home/worker"):
+    with Connection(context.host, context.user, connect_kwargs=context.connect_kwargs) as conn:
+        conn.run('cd %s && docker-compose pull' % composeYmlDirectory)
